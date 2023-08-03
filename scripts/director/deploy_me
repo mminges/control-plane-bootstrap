@@ -1,0 +1,75 @@
+#!/bin/bash
+
+# handle both concourse and runtime command support
+if [ $# == 2 ]; then
+    echo "validated passed in args"
+    IAAS=$1
+    DIRECTOR_VERSION=$2
+elif [ ! -z $IAAS ] && [ ! -z $DIRECTOR_VERSION ]; then
+    echo -e "\nFound IAAS and DIRECTOR_VERSION env vars\n"
+else
+    echo -e "\nCall usage function\n"
+    exit 1
+fi
+
+echo "**************************************************************************************"
+echo "**** NO WARRANTY IS GIVEN OR IMPLIED IF YOU BURN YOUR HOUSE DOWN (THIS MEANS YOU) ****"
+echo "**************************************************************************************"
+echo "This script assumes the platform automation toolkit image is available in local docker cache"
+echo "This script assumes the opsman image yml has been downloaded and is available in the base directory"
+pushd ../../
+
+    # Interpolate env file
+    om interpolate \
+    --config templates/$IAAS/control-plane/opsman/env.yml \
+    --vars-file environments/$IAAS/control-plane/opsman/secrets.yml \
+    > env.yml
+
+    # Disable OpsMan Director Verifiers
+    verifiers=(
+      IaasConfigurationVerifier
+      AvailabilityZonesVerifier
+      NetworksExistenceVerifier
+      NetworksPingableVerifier
+      PrivilegeVerifier
+      NtpVerifier
+      MysqlDatabaseVerifier
+      AllocatedIpAddressVerifier
+      BlobstoreVerifier
+    )
+    
+    if [[ ! -z ${AIRGAPPED_CLOUD} && "${AIRGAPPED_CLOUD}" = true ]]; then
+      echo "Disabling verifiers in Ops Manager"
+      for v in ${verifiers[*]}; do
+        om --env env.yml curl --silent \
+	--path /api/v0/staged/director/verifiers/install_time/$v \
+        -x PUT \
+        -d '{"enabled":false}'
+      done
+
+      # configure director
+      om --env env.yml configure-director \
+      --ignore-verifier-warnings \
+      --config templates/$IAAS/control-plane/director/$DIRECTOR_VERSION/config.yml \
+      --ops-file operations/director-local-blobstore.yml \
+      --vars-file environments/$IAAS/control-plane/director/$DIRECTOR_VERSION/vars.yml \
+      --vars-file environments/$IAAS/control-plane/director/$DIRECTOR_VERSION/secrets.yml \
+      --var iaas_class=$IAAS
+  
+      om --env env.yml apply-changes \
+      --skip-deploy-products \
+      --ignore-warnings
+    else
+      # configure director
+      om --env env.yml configure-director \
+      --config templates/$IAAS/control-plane/director/$DIRECTOR_VERSION/config.yml \
+      --vars-file environments/$IAAS/control-plane/director/$DIRECTOR_VERSION/vars.yml \
+      --vars-file environments/$IAAS/control-plane/director/$DIRECTOR_VERSION/secrets.yml \
+      --var iaas_class=$IAAS
+  
+      om --env env.yml apply-changes \
+      --skip-deploy-products
+    fi
+
+    rm env.yml
+popd

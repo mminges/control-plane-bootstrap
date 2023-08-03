@@ -1,0 +1,91 @@
+concourse_worker_iam_profile: ""
+availability_zones: [
+    "us-gov-west-1a",
+    "us-gov-west-1b",
+    "us-gov-west-1c"
+]
+environment_name: "disconnected"
+management_subnet_cidrs: [
+    "10.0.0.0/26"
+]
+management_subnet_gateways: [
+    "10.0.0.1"
+]
+management_subnet_ids: [
+    "subnet-aaaaaaaa"
+]
+management_subnet_reserved_ip_ranges: [
+    "10.0.0.0-10.0.0.10"
+]
+ntp_servers: "169.254.169.123"
+dns_servers: ""
+ops_manager_iam_instance_profile_name: ""
+ops_manager_key_pair_name: ""
+platform_vms_security_group_id: ""
+region: "us-gov-west-1"
+services_subnet_cidrs: [
+    "10.0.1.0/26",
+    "10.0.1.64/26",
+    "10.0.1.128/26"
+]
+services_subnet_gateways: [
+    "10.0.1.1",
+    "10.0.1.65",
+    "10.0.1.129"
+]
+services_subnet_ids: [
+    "subnet-bbbbbbbb",
+    "subnet-cccccccc",
+    "subnet-dddddddd"
+]
+services_subnet_reserved_ip_ranges: [
+    "10.0.1.0-10.0.1.5",
+    "10.0.1.64-10.0.1.69",
+    "10.0.1.128-10.0.1.133"
+]
+foundation: control-plane
+vpc_id: "vpc-xxxxxxxx"
+iaas_encrypted: true
+bosh_recreate_on_next_deploy: false
+bosh_recreate_persistent_disks_on_next_deploy: false
+director_worker_count: 5
+hm_emailer_enabled: false
+hm_pager_duty_enabled: false
+job_configuration_on_tmpfs: false
+keep_unreachable_vms: false
+post_deploy_enabled: true
+resurrector_enabled: true
+retry_bosh_deploys: false
+skip_director_drain: false
+blobstore_type: local
+database_type: external
+security_opsmanager_root_ca_trusted_certs: true
+security_generate_vm_passwords: true
+director_persistent_disk: 204800
+ec2_endpoint: ec2.us-gov-west-1.amazonaws.com
+elb_endpoint: elasticloadbalancing.us-gov-west-1.amazonaws.com
+root_ca: |
+  -----BEGIN CERTIFICATE-----
+  -----END CERTIFICATE-----
+region_ca_certs: |
+  -----BEGIN CERTIFICATE-----
+  -----END CERTIFICATE-----
+  -----BEGIN CERTIFICATE-----
+  -----END CERTIFICATE-----
+  -----BEGIN CERTIFICATE-----
+  -----END CERTIFICATE-----
+  -----BEGIN CERTIFICATE-----
+  -----END CERTIFICATE-----
+  -----BEGIN CERTIFICATE-----
+  -----END CERTIFICATE-----
+rds_certs: |
+  -----BEGIN CERTIFICATE-----
+  -----END CERTIFICATE-----
+  -----BEGIN CERTIFICATE-----
+  -----END CERTIFICATE-----
+  -----BEGIN CERTIFICATE-----
+  -----END CERTIFICATE-----
+custom_ssh_banner: "DoD Notice and Consent Banner.  You are accessing a U.S. Government (USG) Information System (IS) that is provided for USG-authorized use only.  By using this IS (which includes any device attached to this IS), you consent to the following conditions:  The USG routinely intercepts and monitors communications on this IS for purposes including, but not limited to, penetration testing, COMSEC monitoring, network operations and defense, personnel misconduct (PM), law enforcement (LE), and counterintelligence (CI) investigations.  At any time, the USG may inspect and seize data stored on this IS.  Communications using, or data stored on, this IS are not private, are subject to routine monitoring, interception, and search, and may be disclosed or used for any USG-authorized purpose.  This IS includes security measures (e.g., authentication and access controls) to protect USG interests--not for your personal benefit or privacy.  Notwithstanding the above, using this IS does not constitute consent to PM, LE or CI investigative searching or monitoring of the content of privileged communications, or work product, related to personal representation or services by attorneys, psychotherapists, or clergy, and their assistants. Such communications and work product are private and confidential.See User Agreement for details."
+external_database_options_database: bosh_disconnected
+external_database_options_port: 3306
+external_database_options_tls_enabled: false

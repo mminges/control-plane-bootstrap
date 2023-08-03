@@ -1,0 +1,28 @@
+# BOSH uses this to identify the deployment
+deployment_name: concourse
+# This can be any VM type from the cloud config: bosh cloud-config
+web_vm_type: c5.large
+# This is the external concourse URL exported from the terraform output
+external_host: ""
+# This is the external concourse URL exported from the terraform output
+external_url: ""
+# This can be any VM type from the cloud config: bosh cloud-config
+db_vm_type: c5.xlarge
+# This can be any disk type from the cloud config: bosh cloud-config
+db_persistent_disk_type: 102400
+# This can be any VM type from the cloud config: bosh cloud-config
+worker_vm_type: c5.large
+# This assigns created VMs (web, worker, and db) to AZs in the IaaS
+azs:
+  - us-gov-west-1a
+  - us-gov-west-1b
+  - us-gov-west-1c
+# The network name to assign the VMs to.
+network_name: services
+
+# worker details
+worker_instance_count: 3
+priv_worker_instance_count: 3
+priv_worker_vm_type: c5.large
+priv_worker_tag: ext
+priv_worker_team_name: main

@@ -1,0 +1,41 @@
+- type: remove
+  path: /releases/name=backup-and-restore-sdk?/url
+- type: remove
+  path: /releases/name=backup-and-restore-sdk?/sha1
+- type: replace
+  path: /instance_groups/name=web/vm_extensions?/-
+  value: concourse-lb
+- type: replace
+  path: /instance_groups/name=worker/vm_extensions?/-
+  value: increased-disk
+- type: replace
+  path: /instance_groups/name=worker/vm_extensions?/-
+  value: concourse-worker-extension
+- type: replace
+  path: /variables/-
+  value:
+    name: local_user
+    type: user
+    options:
+      username: admin
+- type: replace
+  path: /instance_groups/name=worker/instances
+  value: ((worker_instance_count))
+- type: replace
+  path: /instance_groups/-
+  value:
+    name: worker-((priv_worker_tag))
+    instances: ((priv_worker_instance_count))
+    vm_type: ((priv_worker_vm_type))
+    stemcell: xenial
+    networks: [{name: ((network_name))}]
+    azs: ((azs))
+    jobs:
+    - release: concourse
+      name: worker
+      properties:
+        team: ((priv_worker_team_name))
+        drain_timeout: 10m
+        tags: [((priv_worker_tag))]
+        worker_gateway: {worker_key: ((worker_key))}
+        iam_instance_profile: ((concourse_worker_iam_profile))

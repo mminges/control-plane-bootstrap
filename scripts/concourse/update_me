@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# handle concourse task support
+if [ -z $ENV_FILE ]; then
+    ENV_FILE="env.yml"
+fi
+if [ -z $IAAS ]; then
+    IAAS="c1d"
+fi
+if [ -z $CONCOURSE_VERSION ]; then
+    echo "Setting var"
+    CONCOURSE_VERSION="6.3.1"
+fi
+
+# handle runtime command support
+if [ $# == 2 ]; then
+    ENV_FILE=$1
+    IAAS=$2
+else
+    IAAS=$1
+fi
+
+echo "**************************************************************************************"
+echo "**** NO WARRANTY IS GIVEN OR IMPLIED IF YOU BURN YOUR HOUSE DOWN (THIS MEANS YOU) ****"
+echo "**************************************************************************************"
+pushd ../../
+
+# get bosh creds
+om -e $ENV_FILE bosh-env > /tmp/bosh-env.source
+source /tmp/bosh-env.source
+
+# existing script breaks on basic auth as local_user does not exist
+# some bosh stuff (add -n back)
+bosh -d concourse deploy concourse-bosh-deployment/cluster/concourse.yml \
+  -o concourse-bosh-deployment/cluster/operations/privileged-http.yml \
+  -o concourse-bosh-deployment/cluster/operations/privileged-https.yml \
+  -o concourse-bosh-deployment/cluster/operations/basic-auth.yml \
+  -o concourse-bosh-deployment/cluster/operations/tls.yml \
+  -o concourse-bosh-deployment/cluster/operations/tls-vars.yml \
+  -o concourse-bosh-deployment/cluster/operations/uaa.yml \
+  -o concourse-bosh-deployment/cluster/operations/credhub-colocated.yml \
+  -o concourse-bosh-deployment/cluster/operations/offline-releases.yml \
+  -o concourse-bosh-deployment/cluster/operations/backup-atc-colocated-web.yml \
+  -o concourse-bosh-deployment/cluster/operations/secure-internal-postgres.yml \
+  -o concourse-bosh-deployment/cluster/operations/secure-internal-postgres-bbr.yml \
+  -o concourse-bosh-deployment/cluster/operations/secure-internal-postgres-uaa.yml \
+  -o concourse-bosh-deployment/cluster/operations/secure-internal-postgres-credhub.yml \
+  -o operations/concourse-operations.yml \
+  -l environments/$IAAS/control-plane/concourse/$CONCOURSE_VERSION/vars.yml \
+  -l concourse-bosh-deployment/versions.yml
+
+  # -o concourse-bosh-deployment/cluster/operations/tls-vars.yml \
+popd

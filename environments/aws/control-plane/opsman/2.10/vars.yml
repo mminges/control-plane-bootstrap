@@ -1,0 +1,12 @@
+ops_manager_iam_instance_profile_name: # instance profile to attach to OpsMan
+ops_manager_key_pair_name: # SSH key pair name used for OpsMan VM
+ops_manager_private_ip: # Private IP for OpsMan VM
+# Only required if you want to add a public IP to OpsMan
+#ops_manager_public_ip: # Public IP for OpsMan VM if required
+region: # AWS region to deploy the OpsMan VM
+environment_name: # Arbitrary environment name. Should match terraform environment name
+ops_manager_security_group_id: # AWS security group id used for OpsMan VM
+ops_manager_subnet_id: # AWS subnet id used for OpsMan VM
+ops_manager_disk_size: 200 # Persistent Disk Size for OpsMan VM
+ops_manager_instance_type: m5.large # EC2 Instance Size for OpsMan VM
+custom_ssh_banner: "DoD Notice and Consent Banner.  You are accessing a U.S. Government (USG) Information System (IS) that is provided for USG-authorized use only.  By using this IS (which includes any device attached to this IS), you consent to the following conditions:  The USG routinely intercepts and monitors communications on this IS for purposes including, but not limited to, penetration testing, COMSEC monitoring, network operations and defense, personnel misconduct (PM), law enforcement (LE), and counterintelligence (CI) investigations.  At any time, the USG may inspect and seize data stored on this IS.  Communications using, or data stored on, this IS are not private, are subject to routine monitoring, interception, and search, and may be disclosed or used for any USG-authorized purpose.  This IS includes security measures (e.g., authentication and access controls) to protect USG interests--not for your personal benefit or privacy.  Notwithstanding the above, using this IS does not constitute consent to PM, LE or CI investigative searching or monitoring of the content of privileged communications, or work product, related to personal representation or services by attorneys, psychotherapists, or clergy, and their assistants. Such communications and work product are private and confidential.See User Agreement for details."

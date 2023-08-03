@@ -1,0 +1,28 @@
+---
+opsman-configuration:
+  aws:
+    region: ((region))
+    vm_name: ((environment_name))-ops-manager-vm
+    boot_disk_size: ((ops_manager_disk_size))
+    vpc_subnet_id: ((ops_manager_subnet_id))
+    security_group_ids: [((ops_manager_security_group_id))]
+    key_pair_name: ((ops_manager_key_pair_name))
+    iam_instance_profile_name: ((ops_manager_iam_instance_profile_name))
+    instance_type: ((ops_manager_instance_type))
+    # At least one IP address (public or private)
+    # needs to be assigned to the VM.
+    # It is also permissable to assign both.
+    private_ip: ((ops_manager_private_ip))
+    #public_ip: ((ops_manager_public_ip))
+
+    # Required if use_instance_profile is false
+    # omit if using Instance Profiles
+    #access_key_id: ((s3creds-access-key-id))
+    #secret_access_key: ((s3creds-secret-access-key))
+
+# Optional Ops Manager UI Settings for upgrade-opsman
+banner-settings: ((custom_ssh_banner))
+#ssl-certificate: ...
+#pivotal-network-settings: ...
+#syslog-settings: ...
+#rbac-settings: ...

@@ -1,0 +1,88 @@
+#!/bin/bash
+
+# handle both concourse and runtime command support
+if [ $# == 2 ]; then
+    echo "validated passed in args"
+    IAAS=$1
+    OPSMAN_VERSION=$2
+elif [ ! -z $IAAS ] && [ ! -z $OPSMAN_VERSION ]; then
+    echo -e "\nFound IAAS and OPSMAN_VERSION env vars\n"
+else
+    echo -e "\nCall usage function\n"
+    exit 1
+fi
+
+echo "**************************************************************************************"
+echo "**** NO WARRANTY IS GIVEN OR IMPLIED IF YOU BURN YOUR HOUSE DOWN (THIS MEANS YOU) ****"
+echo "**************************************************************************************"
+echo "This script assumes the opsman image yml has been downloaded and is available in the base directory"
+pushd ../../
+
+    # deploy vm
+    om vm-lifecycle create-vm \
+    --config templates/$IAAS/control-plane/opsman/$OPSMAN_VERSION/config.yml \
+    --image-file ops-manager*.yml \
+    --state-file state.yml \
+    --vars-file environments/$IAAS/control-plane/opsman/$OPSMAN_VERSION/vars.yml \
+    --vars-file environments/$IAAS/control-plane/opsman/$OPSMAN_VERSION/secrets.yml
+
+    # Interpolate auth file
+    om interpolate \
+    --config templates/$IAAS/control-plane/opsman/auth.yml \
+    --vars-file environments/$IAAS/control-plane/opsman/secrets.yml \
+    > auth.yml
+
+    # Interpolate env file
+    om interpolate \
+    --config templates/$IAAS/control-plane/opsman/env.yml \
+    --vars-file environments/$IAAS/control-plane/opsman/secrets.yml \
+    > env.yml
+
+    started=false
+    OPSMAN_TIMEOUT=120
+    timeout=$((SECONDS+OPSMAN_TIMEOUT))
+    OPSMAN_DOMAIN_OR_IP_ADDRESS=$(cat templates/$IAAS/control-plane/opsman/env.yml | grep target | cut -d ' ' -f2)
+    while [[ $started ]]; do
+      HTTP_OUTPUT=$(curl --write-out "%{http_code}" --silent --output /dev/null "${OPSMAN_DOMAIN_OR_IP_ADDRESS}" -k)
+      if [[ $HTTP_OUTPUT == *"302"* || $HTTP_OUTPUT == *"301"* ]]; then
+        echo "Site is started! $OUTPUT >>> $HTTP_OUTPUT"
+	break
+      else
+        if [[ $SECONDS -gt $timeout ]]; then
+          echo "Timed out waiting for ops manager site to start."
+          exit 1
+        fi
+      fi
+    done
+
+    # configure auth  FIX ME
+    om --env env.yml configure-authentication \
+    --config auth.yml
+
+   if [[ ! -z ${AIRGAPPED_CLOUD} && "${AIRGAPPED_CLOUD}" = true ]]; then
+      echo "Modifying Opsmanager disk from magnetic to gp2"
+
+      ENVIRONMENT_NAME=$(cat environments/$IAAS/control-plane/opsman/$OPSMAN_VERSION/vars.yml \
+      | grep -i environment_name | cut -d ' ' -f2 | tr -d '"')
+
+      VOLUME_ID=$(aws ec2 describe-instances \
+      --filters "Name=tag:Name,Values=${ENVIRONMENT_NAME}-ops-manager-vm" \
+      --query 'Reservations[*].Instances[*].BlockDeviceMappings[*].Ebs.VolumeId' \
+      --output text)
+
+      aws ec2 modify-volume --volume-type gp2 --volume-id $VOLUME_ID
+  fi
+
+   # Set Opsman ui and ssh banner
+   UI_BANNER="Disconnected"
+   SSH_BANNER=$(cat ./environments/disconnected/control-plane/opsman/2.10/vars.yml | grep custom_ssh_banner | cut -d '"' -f2)
+
+   om --env env.yml \
+   curl -s -x PUT \
+   -p /api/v0/settings/banner \
+   -d '{"ui_banner_contents": "'"${UI_BANNER}"'", "ssh_banner_contents":"'"${SSH_BANNER}"'"}'
+
+    rm auth.yml
+    rm env.yml
+
+popd

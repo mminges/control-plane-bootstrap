@@ -1,0 +1,27 @@
+credentials:
+- name: /concourse/<foundation>/director_ssh_key
+  type: value
+  value: |
+    -----BEGIN RSA PRIVATE KEY-----
+
+    -----END RSA PRIVATE KEY-----
+- name: /concourse/<foundation>/s3_access_key_id
+  type: value
+  value: #change_me
+- name: /concourse/<foundation>/s3_secret_access_key
+  type: value
+  value: #change_me
+- name: /concourse/<foundation>/s3_endpoint
+  type: value
+  value: #change_me
+- name: /concourse/<foundation>/ops_manager_decryption_passphrase
+  type: value
+  value: #change_me
+- name: /concourse/<foundation>/ops_manager_user
+  type: user
+  value:
+    password: #change_me    
+    username: #change_me
+- name: /concourse/<foundation>/opsman_domain
+  type: value
+  value: #change_me

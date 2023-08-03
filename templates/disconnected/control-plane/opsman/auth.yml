@@ -1,0 +1,21 @@
+---
+# Required for both Basic Auth and SAML Auth
+decryption-passphrase: ((ops_manager_decryption_passphrase))
+precreated-client-secret: ((ops_manager_user.password)) # create a UAA client on the Ops Manager vm.
+                            # this will be client-secret in env.yml
+
+# Basic Auth Configuration. Comment out if switching to SAML
+username: ((ops_manager_user.username))
+password: ((ops_manager_user.password))
+
+# SAML Auth Configuration. Uncomment and fill in SAML settings
+# saml-idp-metadata: https://saml.example.com:8080
+# saml-bosh-idp-metadata: https://bosh-saml.example.com:8080
+# saml-rbac-admin-group: opsman.full_control
+# saml-rbac-groups-attribute: myenterprise
+
+# Optional
+# http-proxy-url:           # proxy for outbound HTTP network traffic
+# https-proxy-url:          # proxy for outbound HTTPS network traffic
+# no-proxy:                 # comma-separated list of hosts that do not go
+                            # through the proxy

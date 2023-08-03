@@ -1,0 +1,87 @@
+#!/bin/bash
+
+# handle both concourse and runtime support
+if [ $# == 2 ]; then
+    IAAS=$1
+    CONCOURSE_VERSION=$2
+elif [ ! -z $IAAS ] && [ ! -z $CONCOURSE_VERSION ]; then
+    echo -e "\nFound IAAS and CONCOURSE_VERSION env vars\n"
+else
+    echo -e "\nCall usage function\n"
+    exit 1
+fi
+
+echo "**************************************************************************************"
+echo "**** NO WARRANTY IS GIVEN OR IMPLIED IF YOU BURN YOUR HOUSE DOWN (THIS MEANS YOU) ****"
+echo "**************************************************************************************"
+pushd ../../
+
+# Interpolate env file
+om interpolate \
+--config templates/$IAAS/control-plane/opsman/env.yml \
+--vars-file environments/$IAAS/control-plane/opsman/secrets.yml \
+> env.yml
+
+# get bosh creds
+eval "$(om --env env.yml bosh-env)"
+
+# make temporary directory for downloaded bosh releases and concourse-bosh-deployment repo
+TMP_RELEASES_DIR=$(mktemp -d)
+CONCOURSE_BOSH_DEPLOYMENT=$(mktemp -d)
+
+# check if AIRGAPPED_CLOUD and S3_BUCKET are set
+if [[ ! -z ${AIRGAPPED_CLOUD} && "${AIRGAPPED_CLOUD}" = true && ! -z ${S3_BUCKET} ]]; then
+  echo "Using S3 Bucket: $S3_BUCKET"
+  STEMCELL_FOLDER_NAME="generated-stemcells"
+else
+  STEMCELL_FOLDER_NAME="stemcells"
+  S3_BUCKET="disconnected-shuttle-bucket"
+  echo "using default S3 Bucket: $S3_BUCKET"
+fi
+
+# download releases
+aws s3 cp --recursive s3://$S3_BUCKET/products/$IAAS/control-plane/concourse/$CONCOURSE_VERSION/ $TMP_RELEASES_DIR/
+
+# download stemcell
+STEMCELL_VERSION=$(aws s3 ls s3://$S3_BUCKET/stemcells/ | grep "light-bosh-stemcell-621" | awk '{print $4}' | tail -1)
+aws s3 cp s3://$S3_BUCKET/stemcells/$STEMCELL_VERSION $TMP_RELEASES_DIR/
+
+# upload releases
+bosh upload-release $TMP_RELEASES_DIR/concourse-bosh-release*.tgz
+bosh upload-release $TMP_RELEASES_DIR/bpm-release*.tgz
+bosh upload-release $TMP_RELEASES_DIR/postgres-release*.tgz
+bosh upload-release $TMP_RELEASES_DIR/uaa-release*.tgz
+bosh upload-release $TMP_RELEASES_DIR/credhub-release*.tgz
+bosh upload-release $TMP_RELEASES_DIR/backup-and-restore-sdk-release*.tgz
+
+# upload stemcell
+bosh upload-stemcell $TMP_RELEASES_DIR/light-bosh-stemcell-621*.tgz
+
+# extract concourse-bosh-deployment
+tar -xzf $TMP_RELEASES_DIR/concourse-bosh-deployment-*.tgz -C $CONCOURSE_BOSH_DEPLOYMENT/
+
+# existing script breaks on basic auth as local_user does not exist
+# some bosh stuff (add -n back)
+#bosh int $CONCOURSE_BOSH_DEPLOYMENT/cluster/concourse.yml \
+bosh -d concourse deploy $CONCOURSE_BOSH_DEPLOYMENT/cluster/concourse.yml \
+  -o $CONCOURSE_BOSH_DEPLOYMENT/cluster/operations/privileged-http.yml \
+  -o $CONCOURSE_BOSH_DEPLOYMENT/cluster/operations/privileged-https.yml \
+  -o $CONCOURSE_BOSH_DEPLOYMENT/cluster/operations/basic-auth.yml \
+  -o $CONCOURSE_BOSH_DEPLOYMENT/cluster/operations/tls.yml \
+  -o $CONCOURSE_BOSH_DEPLOYMENT/cluster/operations/uaa.yml \
+  -o $CONCOURSE_BOSH_DEPLOYMENT/cluster/operations/credhub-colocated.yml \
+  -o $CONCOURSE_BOSH_DEPLOYMENT/cluster/operations/offline-releases.yml \
+  -o $CONCOURSE_BOSH_DEPLOYMENT/cluster/operations/backup-atc-colocated-web.yml \
+  -o $CONCOURSE_BOSH_DEPLOYMENT/cluster/operations/secure-internal-postgres.yml \
+  -o $CONCOURSE_BOSH_DEPLOYMENT/cluster/operations/secure-internal-postgres-bbr.yml \
+  -o $CONCOURSE_BOSH_DEPLOYMENT/cluster/operations/secure-internal-postgres-uaa.yml \
+  -o $CONCOURSE_BOSH_DEPLOYMENT/cluster/operations/secure-internal-postgres-credhub.yml \
+  -o operations/concourse-operations.yml \
+  -l environments/$IAAS/control-plane/concourse/$CONCOURSE_VERSION/vars.yml \
+  -l $CONCOURSE_BOSH_DEPLOYMENT/versions.yml -n
+
+rm -rf $CONCOURSE_BOSH_DEPLOYMENT
+rm -rf $TMP_RELEASES_DIR
+rm env.yml
+
+popd

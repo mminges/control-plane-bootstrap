@@ -1,0 +1,155 @@
+---
+az-configuration:
+- name: ((availability_zones.0))
+- name: ((availability_zones.1))
+- name: ((availability_zones.2))
+network-assignment:
+  network:
+    name: management
+  singleton_availability_zone:
+    name: ((availability_zones.0))
+networks-configuration:
+  icmp_checks_enabled: false
+  networks:
+  - name: management
+    subnets:
+    - availability_zone_names:
+      - ((availability_zones.0))
+      cidr: ((management_subnet_cidrs.0))
+      dns: ((dns_servers))
+      gateway: ((management_subnet_gateways.0))
+      iaas_identifier: ((management_subnet_ids.0))
+      reserved_ip_ranges: ((management_subnet_reserved_ip_ranges.0))
+  - name: services
+    subnets:
+    - availability_zone_names:
+      - ((availability_zones.0))
+      cidr: ((services_subnet_cidrs.0))
+      dns: ((dns_servers))
+      gateway: ((services_subnet_gateways.0))
+      iaas_identifier: ((services_subnet_ids.0))
+      reserved_ip_ranges: ((services_subnet_reserved_ip_ranges.0))
+    - availability_zone_names:
+      - ((availability_zones.1))
+      cidr: ((services_subnet_cidrs.1))
+      dns: ((dns_servers))
+      gateway: ((services_subnet_gateways.1))
+      iaas_identifier: ((services_subnet_ids.1))
+      reserved_ip_ranges: ((services_subnet_reserved_ip_ranges.1))
+    - availability_zone_names:
+      - ((availability_zones.2))
+      cidr: ((services_subnet_cidrs.2))
+      dns: ((dns_servers))
+      gateway: ((services_subnet_gateways.2))
+      iaas_identifier: ((services_subnet_ids.2))
+      reserved_ip_ranges: ((services_subnet_reserved_ip_ranges.2))
+properties-configuration:
+  director_configuration:
+    bosh_recreate_on_next_deploy: ((bosh_recreate_on_next_deploy))
+    bosh_recreate_persistent_disks_on_next_deploy: ((bosh_recreate_persistent_disks_on_next_deploy))
+    custom_ssh_banner: ((custom_ssh_banner))
+    director_worker_count: ((director_worker_count))
+    encryption:
+      keys: []
+      providers: []
+    database_type: ((database_type))
+    external_database_options:
+      connection_options: {}
+      database: ((external_database_options_database))
+      host: ((external_database_options_host))
+      password: ((bosh_rds_user.password))
+      port: ((external_database_options_port))
+      tls_enabled: ((external_database_options_tls_enabled))
+      user: ((bosh_rds_user.username))
+    hm_emailer_options:
+      enabled: ((hm_emailer_enabled))
+    hm_pager_duty_options:
+      enabled: ((hm_pager_duty_enabled))
+    identification_tags:
+      km-env: ((foundation))
+      iaas-class: ((iaas_class))
+    job_configuration_on_tmpfs: ((job_configuration_on_tmpfs))
+    keep_unreachable_vms: ((keep_unreachable_vms))
+    ntp_servers_string: ((ntp_servers))
+    post_deploy_enabled: ((post_deploy_enabled))
+    resurrector_enabled: ((resurrector_enabled))
+    retry_bosh_deploys: ((retry_bosh_deploys))
+    blobstore_type: ((blobstore_type))
+    s3_blobstore_options:
+      backup_bucket_name: ((s3_blobstore_backup_bucket_name))
+      backup_bucket_region: ((s3_blobstore_backup_bucket_region))
+      backup_strategy: ((s3_blobstore_backup_strategy))
+      bucket_name: ((s3_blobstore_bucket_name))
+      endpoint: ((s3_blobstore_endpoint))
+      access_key: ((s3_access_key_id))
+      secret_key: ((s3_secret_access_key))
+      region: ((s3_blobstore_region))
+      signature_version: ((s3_blobstore_signature_version))
+    skip_director_drain: ((skip_director_drain))
+  iaas_configuration:
+    additional_cloud_properties:
+      connection_options:
+        ca_cert: |
+          ((region_ca_certs))
+      ec2_endpoint: ((ec2_endpoint))
+      elb_endpoint: ((elb_endpoint))
+    encrypted: ((iaas_encrypted))
+    iam_instance_profile: ((ops_manager_iam_instance_profile_name))
+    vpc_id: ((vpc_id))
+    security_group: ((platform_vms_security_group_id))
+    key_pair_name: ((ops_manager_key_pair_name))
+    ssh_private_key: ((ops_manager_ssh_private_key))
+    region: ((region))
+  security_configuration:
+    generate_vm_passwords: ((security_generate_vm_passwords))
+    opsmanager_root_ca_trusted_certs: ((security_opsmanager_root_ca_trusted_certs))
+    trusted_certificates: |
+      ((rds_certs))
+      ((region_ca_certs))
+      ((root_ca))
+resource-configuration:
+  compilation:
+    additional_networks: []
+    additional_vm_extensions: []
+    elb_names: []
+    instance_type:
+      id: automatic
+    instances: automatic
+    internet_connected: false
+    swap_as_percent_of_memory_size: automatic
+  director:
+    additional_networks: []
+    additional_vm_extensions:
+    - public_ip
+    elb_names: []
+    instance_type:
+      id: automatic
+    instances: automatic
+    internet_connected: false
+    persistent_disk:
+      size_mb: ((director_persistent_disk))
+    swap_as_percent_of_memory_size: automatic
+resource-configuration:
+  compilation:
+    instance_type:
+      id: automatic
+vmextensions-configuration:
+- name: concourse-lb
+  cloud_properties:
+    lb_target_groups:
+      - ((environment_name))-concourse-tg-443
+      - ((environment_name))-concourse-tg-2222
+      - ((environment_name))-concourse-tg-8844
+      - ((environment_name))-concourse-tg-8443
+    security_groups:
+      - ((environment_name))-concourse-sg
+      - ((platform_vms_security_group_id))
+- name: increased-disk
+  cloud_properties:
+    type: gp2
+    size: 512000
+- name: concourse-worker-extension
+  cloud_properties:
+    iam_instance_profile: ((concourse_worker_iam_profile))
+    vm_type:
+    - c5.large
